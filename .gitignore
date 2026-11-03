@@ -1,0 +1,14 @@
+# C build outputs: executables have no extension on macOS, so ignore
+# everything in c-refresh/ and re-include files with an extension.
+c-refresh/*
+!c-refresh/*.*
+# Debug-symbol bundles (they have a dot, so the rule above lets them back in)
+*.dSYM/
+*.o
+
+# Editor-local config
+*.code-workspace
+
+# macOS folder metadata (kept last: the !c-refresh/*.* rule above would
+# otherwise re-include it, and in .gitignore the last matching rule wins)
+.DS_Store
