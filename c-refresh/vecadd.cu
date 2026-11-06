@@ -1,3 +1,4 @@
+#include <cstring>
 #include <time.h>
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime_api.h>
@@ -6,6 +7,7 @@
 #include <errno.h>
 #include <stdbool.h> 
 #include <stdint.h>
+#include <string.h>
 
 bool parse_positive(const char *text, size_t *out){
         char *end;
@@ -106,6 +108,8 @@ int main(int argc, char *argv[]) {
         ptrb[i] = i;
 
     }
+
+    memset(ptrc, 0, n*sizeof(float));
 
     
 
