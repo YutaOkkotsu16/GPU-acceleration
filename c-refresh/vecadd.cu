@@ -1,4 +1,4 @@
-
+#include <time.h>
 #include <cuda_device_runtime_api.h>
 #include <cuda_runtime_api.h>
 #include <stdio.h>
@@ -50,6 +50,8 @@ void check_error(cudaError_t err, const char *step){
 
 
 int main(int argc, char *argv[]) {
+
+    struct timespec start, end;
 
     if (argc !=3){
         fprintf(stderr, "Usage: %s <N> <blocksize>\n", argv[0]);
@@ -129,15 +131,50 @@ int main(int argc, char *argv[]) {
     float *d_c = NULL;
     check_error(cudaMalloc(&d_c, n * sizeof(float)),"alloc d_c");    
 
+
+    check_error(cudaDeviceSynchronize(), "wait before loading aand b");
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     check_error(cudaMemcpy(d_a, ptra, n * sizeof(float), cudaMemcpyHostToDevice), "copy d_a");
+
+   
+
     check_error(cudaMemcpy(d_b, ptrb, n * sizeof(float), cudaMemcpyHostToDevice), "copy d_b");
+
+    check_error(cudaDeviceSynchronize(), "wait after loading a and b");
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    double ms_1 = (end.tv_sec - start.tv_sec) * 1e3
+          + (end.tv_nsec - start.tv_nsec) / 1e6;
+    
+
+
+    check_error(cudaDeviceSynchronize(), "wait before kernel");
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     vecadd_kernel<<<blocks,blocksize>>>(d_a, d_b, d_c, n);
     check_error(cudaGetLastError(), "kernel_launch_error\n");
 
+    check_error(cudaDeviceSynchronize(), "wait after kernel");
+    clock_gettime(CLOCK_MONOTONIC, &end);
+
+    double ms_2 = (end.tv_sec - start.tv_sec) * 1e3
+          + (end.tv_nsec - start.tv_nsec) / 1e6;
+    
+
+    check_error(cudaDeviceSynchronize(), "wait before loading c back");
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     check_error(cudaMemcpy(ptrc, d_c, n * sizeof(float), cudaMemcpyDeviceToHost), "copy d_c");
 
+    check_error(cudaDeviceSynchronize(), "wait after loading c back");
+    clock_gettime(CLOCK_MONOTONIC, &end);
 
+    double ms_3 = (end.tv_sec - start.tv_sec) * 1e3
+          + (end.tv_nsec - start.tv_nsec) / 1e6;
+    
+    printf("time for loading a and b: %0.9g, kernel time: %0.9g, time for loading back c: %0.9g\n", ms_1, ms_2, ms_3);
+    
     for (size_t l = 0; l < n; l++){
 
         if (ptrc[l] != ptrb[l] + ptra[l]){
@@ -155,7 +192,7 @@ int main(int argc, char *argv[]) {
 
     }
 
-    printf("PASS\n");
+    printf("--------PASS--------\n");
 
     cudaFree(d_a);
     cudaFree(d_b);
